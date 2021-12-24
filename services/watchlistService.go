@@ -59,20 +59,90 @@ func (s *WatchlistService) ParseHistory(username string) (models.History, error)
 	return history, nil
 }
 
-func (w *WatchlistService) CreateJson(body []byte) error {
+func (w *WatchlistService) CreateJson(anime []models.AnimeExel) error {
 	f, err := os.Create("watchlist.json")
 
 	if err != nil {
 		return err
 	}
 
-	f.Write(body)
+	bode, err := json.Marshal(anime)
+
+	if err != nil {
+		return err
+	}
+
+	f.Write(bode)
 
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (w *WatchlistService) ParseBigWatchlist(username string) []models.AnimeExel {
+	if len(username) <= 0 {
+		err := errors.New("username length must not be 0")
+		log.Fatal(err)
+	}
+
+	anime := []models.AnimeExel{}
+	search := true
+	page := 1
+
+	for search {
+		url := fmt.Sprintf("https://api.jikan.moe/v3/user/%s/animelist/all/%d/", username, page)
+		req, err := http.NewRequest("GET", url, nil)
+
+		if err != nil {
+			search = false
+			break
+		}
+
+		req.Header.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36")
+		resp, err := httpClient.Do(req)
+
+		if err != nil {
+			search = false
+			break
+		}
+
+		if resp.StatusCode != 200 {
+			search = false
+			err := errors.New("user is not found")
+			log.Fatal(err)
+			break
+		}
+
+		body, err := io.ReadAll(resp.Body)
+
+		if err != nil {
+			fmt.Println(resp.StatusCode)
+		}
+
+		if len(body) < 200 {
+			break
+		}
+
+		defer resp.Body.Close()
+
+		watchlist := models.WatchlistExel{}
+
+		json.Unmarshal(body, &watchlist)
+
+		for _, item := range watchlist.Anime {
+			anime = append(anime, item)
+		}
+
+		fmt.Println(watchlist.Anime)
+
+		page = page + 1
+
+		time.Sleep(4 * time.Second)
+	}
+
+	return anime
 }
 
 func (w *WatchlistService) ParseWatchlist(username string) ([]byte, error) {
@@ -115,7 +185,17 @@ func (w *WatchlistService) ParseWatchlist(username string) ([]byte, error) {
 	return body, nil
 }
 
-func (w *WatchlistService) CreateExel(body []byte) {
+func (w *WatchlistService) ShowWatchlist(body []byte) {
+	anime := models.WatchListJson{}
+
+	json.Unmarshal(body, &anime)
+
+	for _, a := range anime.Anime {
+		fmt.Printf("name: %s - watched_episodes: %d total_episodes: %d\n", a.Name, a.Wepisodes, a.Aepisodes)
+	}
+}
+
+func (w *WatchlistService) CreateExcel(anime []models.AnimeExel) {
 	f := excelize.NewFile()
 
 	f.SetCellValue("Sheet1", "A1", "mal_id")
@@ -126,12 +206,9 @@ func (w *WatchlistService) CreateExel(body []byte) {
 	f.SetCellValue("Sheet1", "F1", "total_episodes")
 	f.SetCellValue("Sheet1", "G1", "type")
 
-	anime := models.WatchlistExel{}
 	cell := 1
 
-	json.Unmarshal(body, &anime)
-
-	for _, a := range anime.Anime {
+	for _, a := range anime {
 		cell = cell + 1
 		cellNumber := fmt.Sprintf("%d", cell)
 		f.SetCellValue("Sheet1", "A"+cellNumber, a.ID)
@@ -145,15 +222,5 @@ func (w *WatchlistService) CreateExel(body []byte) {
 
 	if err := f.SaveAs("watchlist.xlsx"); err != nil {
 		log.Fatal(err)
-	}
-}
-
-func (w *WatchlistService) ShowWatchlist(body []byte) {
-	anime := models.WatchListJson{}
-
-	json.Unmarshal(body, &anime)
-
-	for _, a := range anime.Anime {
-		fmt.Printf("name: %s - watched_episodes: %d total_episodes: %d\n", a.Name, a.Wepisodes, a.Aepisodes)
 	}
 }

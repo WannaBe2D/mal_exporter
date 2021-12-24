@@ -12,11 +12,7 @@ func (w *WatchlistController) Create(username string) {
 
 	watchlist := new(services.WatchlistService)
 
-	body, err := watchlist.ParseWatchlist(username)
-
-	if err != nil {
-		return
-	}
+	body := watchlist.ParseBigWatchlist(username)
 
 	watchlist.CreateJson(body)
 }
@@ -54,11 +50,7 @@ func (w *WatchlistController) Watchlist(username string) {
 func (w *WatchlistController) Excel(username string) {
 	watchlist := new(services.WatchlistService)
 
-	body, err := watchlist.ParseWatchlist(username)
+	body := watchlist.ParseBigWatchlist(username)
 
-	if err != nil {
-		return
-	}
-
-	watchlist.CreateExel(body)
+	watchlist.CreateExcel(body)
 }
