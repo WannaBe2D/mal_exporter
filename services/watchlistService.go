@@ -91,6 +91,8 @@ func (w *WatchlistService) ParseBigWatchlist(username string) []models.AnimeExel
 	search := true
 	page := 1
 
+	fmt.Println("(ﾉ◕ヮ◕)ﾉ*:･ﾟ✧")
+
 	for search {
 		url := fmt.Sprintf("https://api.jikan.moe/v3/user/%s/animelist/all/%d/", username, page)
 		req, err := http.NewRequest("GET", url, nil)
@@ -100,7 +102,7 @@ func (w *WatchlistService) ParseBigWatchlist(username string) []models.AnimeExel
 			break
 		}
 
-		req.Header.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36")
+		req.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.102")
 		resp, err := httpClient.Do(req)
 
 		if err != nil {
@@ -118,7 +120,7 @@ func (w *WatchlistService) ParseBigWatchlist(username string) []models.AnimeExel
 		body, err := io.ReadAll(resp.Body)
 
 		if err != nil {
-			fmt.Println(resp.StatusCode)
+			break
 		}
 
 		if len(body) < 200 {
@@ -134,9 +136,6 @@ func (w *WatchlistService) ParseBigWatchlist(username string) []models.AnimeExel
 		for _, item := range watchlist.Anime {
 			anime = append(anime, item)
 		}
-
-		fmt.Println(watchlist.Anime)
-
 		page = page + 1
 
 		time.Sleep(4 * time.Second)
@@ -154,7 +153,7 @@ func (w *WatchlistService) ParseWatchlist(username string) ([]byte, error) {
 
 	url := fmt.Sprintf("https://api.jikan.moe/v3/user/%s/animelist/all", username)
 	req, err := http.NewRequest("GET", url, nil)
-	req.Header.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36")
+	req.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.102")
 
 	if err != nil {
 		return make([]byte, 0), err
